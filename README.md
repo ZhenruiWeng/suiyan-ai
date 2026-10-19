@@ -6,6 +6,8 @@
 
 **核心理念：不去皱纹、保留原生特征，只提气色。**
 
+![Architecture](static/architecture.png)
+
 ## Architecture
 
 ```
