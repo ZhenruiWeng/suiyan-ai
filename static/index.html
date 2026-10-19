@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>岁颜AI · 熟龄肌智能妆容方案</title>
+<style>
+  :root{
+    --bg:#f6f4fa; --card:#ffffff; --ink:#2b2340; --muted:#7a7290;
+    --brand:#6d4bd6; --brand-soft:#efeafc; --gold:#b98a2f;
+    --border:#e6e1f0; --ok:#2e8b57; --danger:#b03636;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Microsoft YaHei",system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.6}
+  .wrap{max-width:980px;margin:0 auto;padding:24px 16px 60px}
+  header{text-align:center;padding:18px 0 8px}
+  header h1{font-size:30px;letter-spacing:2px}
+  header h1 span{color:var(--brand)}
+  header p{color:var(--muted);font-size:14px;margin-top:4px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px;margin-top:18px}
+  .step-tag{display:inline-block;background:var(--brand);color:#fff;font-size:13px;border-radius:20px;padding:2px 12px;margin-bottom:10px}
+  /* mode tabs */
+  .tabs{display:flex;gap:10px;margin-bottom:14px}
+  .tab{flex:1;text-align:center;padding:10px;border:1px solid var(--border);border-radius:10px;cursor:pointer;font-size:15px;background:#fff;transition:.15s}
+  .tab.active{background:var(--brand);color:#fff;border-color:var(--brand)}
+  /* upload */
+  .drop{border:2px dashed var(--border);border-radius:12px;padding:26px;text-align:center;cursor:pointer;transition:.15s}
+  .drop:hover{border-color:var(--brand);background:var(--brand-soft)}
+  .drop img{max-height:280px;border-radius:10px;margin-top:10px}
+  .drop p{color:var(--muted);font-size:14px}
+  /* camera */
+  .cam-box{position:relative;text-align:center}
+  .cam-box video{max-width:100%;border-radius:12px;background:#111;transform:scaleX(-1)}
+  .cam-ctrl{display:flex;gap:10px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+  .live-strip{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:12px;min-height:44px}
+  .live-chip{background:var(--brand-soft);border-radius:20px;padding:4px 14px;font-size:13px}
+  .live-chip b{color:var(--brand)}
+  .cam-on-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--danger);margin-right:6px;animation:blink 1.2s infinite}
+  @keyframes blink{50%{opacity:.35}}
+  /* metrics */
+  .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:14px}
+  .metric{background:var(--brand-soft);border-radius:10px;padding:12px;text-align:center}
+  .metric b{font-size:22px;color:var(--brand);display:block}
+  .metric span{font-size:12px;color:var(--muted)}
+  /* form */
+  .form-row{display:flex;gap:14px;flex-wrap:wrap;margin-top:14px}
+  .form-row label{flex:1;min-width:200px;font-size:14px;color:var(--muted)}
+  select{width:100%;margin-top:6px;padding:9px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:#fff}
+  .btn{display:inline-block;background:var(--brand);color:#fff;border:none;border-radius:10px;padding:12px 34px;font-size:16px;cursor:pointer;margin-top:16px;letter-spacing:2px}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn.sm{padding:9px 20px;font-size:14px;margin-top:0}
+  .btn.ghost{background:#fff;color:var(--brand);border:1px solid var(--brand)}
+  .btn.off{background:#8a7fb0}
+  /* plan */
+  .positioning{font-size:19px;font-weight:700;text-align:center;color:var(--brand);padding:6px 0 2px}
+  .native-note{background:#fbf7ec;border:1px solid #f0e3c2;color:#7a5c17;border-radius:10px;padding:12px 14px;font-size:14px;margin-top:12px}
+  .native-note b{color:var(--gold)}
+  .products{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-top:14px}
+  .prod{border:1px solid var(--border);border-radius:12px;padding:14px}
+  .prod h4{font-size:15px}
+  .badge{display:inline-block;background:var(--brand);color:#fff;border-radius:6px;font-size:12px;padding:1px 8px;margin-right:6px;vertical-align:middle}
+  .badge.cat{background:#8a7fb0}
+  .price{color:var(--gold);font-weight:700;font-size:14px}
+  .prod .why{font-size:13px;color:var(--muted);margin-top:6px}
+  .prod .hint{font-size:12px;color:#9a6ea8;margin-top:6px;background:var(--brand-soft);border-radius:8px;padding:6px 8px}
+  .steps{margin-top:14px}
+  .steps li{margin:10px 0 10px 22px;font-size:15px}
+  .steps li::marker{color:var(--brand);font-weight:700}
+  /* keyword confirmation chips */
+  .kw-row{display:flex;align-items:flex-start;gap:8px;margin-top:8px;flex-wrap:wrap}
+  .kw-label{font-size:13px;color:var(--muted);min-width:70px;padding-top:4px;flex-shrink:0}
+  .kw-chip{padding:4px 12px;border:1px solid var(--border);border-radius:20px;font-size:13px;cursor:pointer;background:#fff;transition:.12s;user-select:none}
+  .kw-chip:hover{border-color:var(--brand)}
+  .kw-chip.sel{background:var(--brand);color:#fff;border-color:var(--brand)}
+  #kwBox{margin-top:16px;padding-top:14px;border-top:1px dashed var(--border);transition:box-shadow .3s}
+  #kwBox.flash{box-shadow:0 0 0 3px rgba(109,75,214,.35);border-radius:10px}
+  .err{background:#fdecec;color:var(--danger);border-radius:10px;padding:12px;margin-top:12px;font-size:14px;display:none}
+  .loading{text-align:center;color:var(--brand);padding:10px;display:none}
+  footer{text-align:center;color:var(--muted);font-size:12px;margin-top:30px}
+  /* mobile: phone / tablet access for cross-device demo */
+  @media (max-width: 640px) {
+    .wrap{padding:14px 12px 40px}
+    h1{font-size:22px;letter-spacing:2px}
+    .card{padding:16px 14px;margin-top:14px}
+    .metrics{grid-template-columns:repeat(2,1fr);gap:8px}
+    .metric b{font-size:19px}
+    .btn{width:100%;padding:14px 0;font-size:17px}
+    .btn.sm{width:auto;padding:10px 16px}
+    .prod{padding:12px}
+    .steps li{font-size:16px}
+    .kw-chip{padding:8px 14px;font-size:14px}  /* bigger touch targets */
+    #cam{width:100%;height:auto}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="svcBar" style="display:none;padding:10px 14px;border-radius:10px;font-size:14px;margin-bottom:6px"></div>
+  <header>
+    <h1>岁颜<span>AI</span> · 熟龄肌智能妆容</h1>
+    <p>不上镜的从来不是年龄，是不会搭的妆 —— 保留原生特征，只提气色</p>
+  </header>
+
+  <!-- STEP 1 input -->
+  <div class="card">
+    <span class="step-tag">第 1 步 · 获取人像</span>
+    <div class="tabs">
+      <div class="tab active" id="tabUpload">📁 上传照片</div>
+      <div class="tab" id="tabCam">📷 摄像头实时检测</div>
+    </div>
+
+    <!-- upload mode -->
+    <div id="modeUpload">
+      <div class="drop" id="drop">
+        <p>点击或拖拽照片到此处（jpg / png，正面自然光最佳）</p>
+        <img id="preview" style="display:none">
+      </div>
+      <input type="file" id="file" accept="image/jpeg,image/png,image/webp" style="display:none">
+    </div>
+
+    <!-- camera mode -->
+    <div id="modeCam" style="display:none">
+      <div class="cam-box">
+        <video id="video" autoplay playsinline muted style="display:none"></video>
+        <p id="camHint" style="color:var(--muted);font-size:14px;padding:30px 0">点击「打开摄像头」开始实时检测</p>
+      </div>
+      <div class="cam-ctrl">
+        <button class="btn sm ghost" id="camStart">打开摄像头</button>
+        <button class="btn sm" id="liveToggle" style="display:none">开始实时检测</button>
+        <button class="btn sm ghost" id="snapBtn" style="display:none">抓拍本次画面</button>
+        <button class="btn sm off" id="camStop" style="display:none">关闭摄像头</button>
+      </div>
+      <div class="live-strip" id="liveStrip"></div>
+      <div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--border)">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <button class="btn sm ghost" id="camVoiceBtn">🎤 语音说需求</button>
+          <span id="camVoiceHint" style="font-size:13px;color:var(--muted)">边照镜子边说：场合 / 预算 / 偏好，生成方案时会一并使用</span>
+        </div>
+        <div id="camVoiceText" style="display:none;margin-top:8px;font-size:13px;background:var(--brand-soft);border-radius:8px;padding:8px 10px"></div>
+      </div>
+    </div>
+
+    <div class="err" id="err1"></div>
+    <div class="loading" id="loading1">正在量化分析肤色 …</div>
+  </div>
+
+  <!-- STEP 2 metrics -->
+  <div class="card" id="card2" style="display:none">
+    <span class="step-tag">第 2 步 · 量化肤质画像</span>
+    <div class="metrics" id="metrics"></div>
+    <div class="form-row">
+      <label>肤质类型（单张照片无法量化油干，请自选）
+        <select id="skin_type">
+          <option>混合性</option><option>干性</option><option>油性</option>
+          <option>中性</option><option>敏感肌</option>
+        </select>
+      </label>
+      <label>妆容场合
+        <select id="occasion">
+          <option>日常通勤</option><option>宴会聚会</option>
+          <option>重要活动</option><option>户外出游</option>
+        </select>
+      </label>
+    </div>
+
+    <div style="margin-top:16px;padding-top:14px;border-top:1px dashed var(--border)">
+      <span class="step-tag" style="background:#8a7fb0">🎤 语音补充需求（可选）</span>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:8px">
+        <button class="btn sm ghost" id="voiceBtn">🎤 说出你的需求</button>
+        <span id="voiceHint" style="font-size:13px;color:var(--muted)">说出场合 / 预算 / 偏好，例如："下周参加婚礼，预算300，想要显气色不卡纹"</span>
+      </div>
+      <textarea id="voiceText" placeholder="语音转写结果显示在这里，也可以直接打字补充（可留空）"
+        style="width:100%;margin-top:10px;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:14px;min-height:64px;font-family:inherit;resize:vertical"></textarea>
+
+      <div id="kwBox">
+        <span class="step-tag" style="background:#2e8b57">✅ 关键词确认（点选即可，不确定的可以不选）</span>
+        <div id="kwGroups"></div>
+      </div>
+    </div>
+
+    <button class="btn" id="go">生成妆容方案</button>
+    <div class="loading" id="loading2">岁颜AI 正在为你匹配产品与色号 …</div>
+  </div>
+
+  <!-- STEP 3 plan -->
+  <div class="card" id="card3" style="display:none">
+    <span class="step-tag">第 3 步 · 你的专属方案</span>
+    <div class="positioning" id="positioning"></div>
+    <div class="native-note" id="native"></div>
+    <div class="products" id="products"></div>
+    <h4 style="margin-top:18px">📖 大字版化妆步骤</h4>
+    <ol class="steps" id="steps"></ol>
+  </div>
+
+  <footer>岁颜AI · 熟龄肌智能妆容方案</footer>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let analyzeResult = null, priceMap = {};
+
+/* ---------------- service status + fetch helpers ---------------- */
+async function fetchTimeout(url, opts = {}, ms = 90000) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms);
+  try { return await fetch(url, { ...opts, signal: ctrl.signal }); }
+  finally { clearTimeout(t); }
+}
+
+(async () => {  // connectivity probe on page load
+  const bar = $('svcBar');
+  const hasCam = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+  try {
+    const r = await fetchTimeout('/health', {}, 8000);
+    if (!r.ok) throw new Error('status ' + r.status);
+    // connected: stay silent unless the camera/mic context is broken
+    if (!hasCam) {
+      bar.style.display = 'block';
+      bar.style.background = '#fbf7ec'; bar.style.color = '#7a5c17';
+      bar.textContent = '⚠ 当前页面无法调用摄像头/麦克风：请通过 http://127.0.0.1:8000 访问本页（不要用 file:// 直接打开或从其他设备用 IP 访问）';
+    }
+  } catch (e) {
+    bar.style.display = 'block';
+    bar.style.background = '#fdecec'; bar.style.color = '#b03636';
+    bar.textContent = '✗ 服务未连接——所有检测都会失败。请在 RAGProject 目录运行: py -3.12 -m uvicorn suiyan_api:app --port 8000，然后刷新本页';
+  }
+})();
+
+/* ---------------- error helpers ---------------- */
+function showErr(msg) {
+  const e = $('err1');
+  e.innerHTML = msg + '<br><span style="font-size:12px;color:#888">若提示网络错误：请确认服务已启动（py -3.12 -m uvicorn suiyan_api:app --port 8000），生成方案约需15-30秒，请耐心等待。</span>';
+  e.style.display = 'block';
+}
+function hideErr() { $('err1').style.display = 'none'; }
+function friendlyError(e) {
+  if (e && e.name === 'AbortError') return '请求超时（90秒无响应），请重试或重启服务';
+  if (e instanceof TypeError) return '无法连接服务（可能服务未启动或正在重启），请稍候重试';
+  return e.message || String(e);
+}
+
+/* ---------------- mode tabs ---------------- */
+$('tabUpload').onclick = () => switchMode(true);
+$('tabCam').onclick = () => switchMode(false);
+function switchMode(upload) {
+  $('tabUpload').classList.toggle('active', upload);
+  $('tabCam').classList.toggle('active', !upload);
+  $('modeUpload').style.display = upload ? 'block' : 'none';
+  $('modeCam').style.display = upload ? 'none' : 'block';
+  if (!upload) stopLive(); // entering cam tab does not auto-start
+}
+
+/* ---------------- upload mode ---------------- */
+const drop = $('drop'), fileInput = $('file');
+drop.onclick = () => fileInput.click();
+drop.ondragover = e => e.preventDefault();
+drop.ondrop = e => {
+  e.preventDefault();
+  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+};
+fileInput.onchange = () => { if (fileInput.files.length) handleFile(fileInput.files[0]); };
+
+async function handleFile(f) {
+  hideErr();
+  if (!/^image\/(jpeg|png|webp)$/.test(f.type)) { showErr('仅支持 jpg / png / webp 图片'); return; }
+  $('preview').src = URL.createObjectURL(f);
+  $('preview').style.display = 'inline-block';
+  $('loading1').style.display = 'block';
+  try {
+    const fd = new FormData(); fd.append('file', f, 'photo.jpg');
+    const r = await fetchTimeout('/vision/analyze', { method: 'POST', body: fd }, 60000);
+    if (!r.ok) {
+      let d = ''; try { d = (await r.json()).detail; } catch (_) {}
+      throw new Error(d || ('服务返回 ' + r.status));
+    }
+    applyAnalyze(await r.json());
+  } catch (e) { showErr('量化分析失败：' + friendlyError(e)); }
+  $('loading1').style.display = 'none';
+}
+
+function applyAnalyze(res, scroll = true) {
+  analyzeResult = res;
+  renderMetrics(res);
+  $('card2').style.display = 'block';
+  if (scroll) $('card2').scrollIntoView({ behavior: 'smooth' });
+}
+
+function renderMetrics(res) {
+  const m = res.metrics, s = res.suggested_profile;
+  const items = [
+    ['ITA°', m.ita_degree, '肤色角度（量化深浅）'],
+    ['底调比', m.undertone_ratio, 'b*/a*（黄红平衡）'],
+    ['纹理密度', m.wrinkle_density, '高频能量归一化'],
+    ['肤色像素', m.skin_px, '有效采样'],
+  ];
+  $('metrics').innerHTML = items.map(([k, v, d]) =>
+    `<div class="metric"><b>${v}</b><span>${k} · ${d}</span></div>`).join('') +
+    `<div class="metric"><b>${s.undertone}</b><span>判定底调</span></div>` +
+    `<div class="metric"><b>${s.skin_tone}</b><span>判定肤色档</span></div>` +
+    (m.low_light ? '<div class="metric" style="background:#fbf7ec"><b style="color:#b98a2f">⚠ 光线不足</b><span>请正对自然光/顶光重测，否则肤色判定会偏深</span></div>' : '');
+}
+
+/* ---------------- camera mode ---------------- */
+let stream = null, liveTimer = null, liveBusy = false;
+
+function camMicBlocked() {
+  // Browsers only expose mediaDevices on secure contexts (HTTPS or
+  // localhost). Plain http + LAN IP (phone access) returns undefined.
+  return !(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+}
+const CAM_BLOCK_MSG = '当前访问方式不支持摄像头/麦克风（浏览器仅允许 HTTPS 或 localhost 调用）。手机上请改用「上传照片」+ 关键词点选，全流程可用；如需实时检测/语音，请在电脑上通过 http://127.0.0.1:8000 体验，或部署 HTTPS 内网穿透';
+
+$('camStart').onclick = async () => {
+  hideErr();
+  if (camMicBlocked()) { showErr(CAM_BLOCK_MSG); return; }
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user', width: { ideal: 1280 } }, audio: false
+    });
+    $('video').srcObject = stream;
+    $('video').style.display = 'inline-block';
+    $('camHint').style.display = 'none';
+    $('liveToggle').style.display = 'inline-block';
+    $('snapBtn').style.display = 'inline-block';
+    $('camStop').style.display = 'inline-block';
+    $('camStart').style.display = 'none';
+  } catch (e) {
+    showErr('无法打开摄像头：' + (e.name === 'NotAllowedError'
+      ? '请在浏览器地址栏允许摄像头权限' : e.message));
+  }
+};
+
+$('camStop').onclick = () => { stopLive(); closeCam(); };
+function closeCam() {
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  $('video').style.display = 'none';
+  $('camHint').style.display = 'block';
+  ['liveToggle', 'snapBtn', 'camStop'].forEach(id => $(id).style.display = 'none');
+  $('camStart').style.display = 'inline-block';
+  $('liveToggle').textContent = '开始实时检测';
+  $('liveToggle').classList.remove('off');
+}
+
+function grabFrame() {
+  const v = $('video');
+  if (!v.videoWidth) return null;
+  const c = document.createElement('canvas');
+  const scale = Math.min(1, 900 / Math.max(v.videoWidth, v.videoHeight));
+  c.width = v.videoWidth * scale; c.height = v.videoHeight * scale;
+  c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+  return new Promise(res => c.toBlob(b => res(b), 'image/jpeg', 0.85));
+}
+
+async function analyzeFrame() {
+  const blob = await grabFrame();
+  if (!blob) return null;
+  const fd = new FormData();
+  fd.append('file', blob, 'frame.jpg');
+  const r = await fetch('/vision/analyze', { method: 'POST', body: fd });
+  if (!r.ok) throw new Error('服务返回 ' + r.status);
+  return r.json();
+}
+
+function renderLiveStrip(res) {
+  const m = res.metrics, s = res.suggested_profile;
+  const low = m.low_light ? '<span class="live-chip" style="background:#fbf7ec;color:#7a5c17">⚠ 光线不足，请正对光源</span>' : '';
+  $('liveStrip').innerHTML =
+    `<span class="live-chip"><b>ITA° ${m.ita_degree}</b></span>` +
+    `<span class="live-chip"><b>${s.undertone}</b> 底调</span>` +
+    `<span class="live-chip"><b>${s.skin_tone}</b></span>` +
+    `<span class="live-chip">关注：${s.concerns.length ? s.concerns.join('、') : '无'}</span>` + low;
+}
+
+$('liveToggle').onclick = () => {
+  if (liveTimer) { stopLive(); return; }
+  let step2Shown = analyzeResult != null;   // auto-reveal step 2 only once
+  liveTimer = setInterval(async () => {
+    if (liveBusy || !stream) return;
+    liveBusy = true;
+    try {
+      const res = await analyzeFrame();
+      renderLiveStrip(res);
+      analyzeResult = res;              // keep latest frame result ready
+      if (!step2Shown) {
+        applyAnalyze(res, false);       // reveal step 2 without yanking view
+        step2Shown = true;
+        $('liveStrip').innerHTML += '<span class="live-chip" style="background:#e9f7ef;color:#20693c"><b>✓ 第 2 步已就绪</b>（下方），结果持续更新中</span>';
+      } else {
+        renderMetrics(res);             // keep step-2 metrics fresh
+      }
+    } catch (e) { /* silent during live loop */ }
+    liveBusy = false;
+  }, 2500);
+  $('liveToggle').textContent = '停止实时检测';
+  $('liveToggle').classList.add('off');
+  $('liveStrip').innerHTML = '<span class="live-chip"><span class="cam-on-dot"></span>实时检测中 …</span>';
+};
+function stopLive() {
+  if (liveTimer) { clearInterval(liveTimer); liveTimer = null; }
+}
+
+$('snapBtn').onclick = async () => {
+  hideErr(); stopLive();
+  $('liveToggle').textContent = '开始实时检测';
+  $('liveToggle').classList.remove('off');
+  $('loading1').style.display = 'block';
+  try {
+    const res = await analyzeFrame();
+    applyAnalyze(res);
+  } catch (e) { showErr('抓拍分析失败：' + friendlyError(e)); }
+  $('loading1').style.display = 'none';
+};
+
+/* ---------------- keyword confirmation ----------------
+   Many mature-skin users cannot articulate beauty jargon. After (or instead
+   of) voice input they tap chips to confirm the request. Selections are
+   merged into user_request as plain text, so the backend stays untouched. */
+const KW_GROUPS = [
+  { key: 'occasion', label: '场合', multi: false, sync: true, options: [
+    { t: '日常通勤', m: ['通勤', '上班', '日常', '上学'] },
+    { t: '宴会聚会', m: ['宴会', '婚礼', '婚宴', '派对', '聚会', '年会', '喜酒'] },
+    { t: '重要活动', m: ['活动', '演出', '主持', '面试', '典礼', '拍照'] },
+    { t: '户外出游', m: ['出游', '旅游', '户外', '旅行', '踏青'] },
+  ]},
+  { key: 'budget', label: '预算', multi: false, options: [
+    { t: '不限', m: [] }, { t: '200元内', m: [] }, { t: '500元内', m: [] }, { t: '1000元内', m: [] },
+  ]},
+  { key: 'finish', label: '妆感偏好', multi: true, options: [
+    { t: '显气色', m: ['气色', '精神', '红润'] },
+    { t: '清透自然', m: ['清透', '自然', '淡妆', '裸妆'] },
+    { t: '有气场', m: ['气场', '大气', '正式', '浓妆'] },
+    { t: '遮瑕减龄', m: ['遮瑕', '斑点', '痘印', '减龄', '显年轻'] },
+  ]},
+  { key: 'texture', label: '质地偏好', multi: true, options: [
+    { t: '滋润保湿', m: ['滋润', '保湿', '干燥', '卡纹', '起皮'] },
+    { t: '持久不脱妆', m: ['持久', '脱妆', '控油', '持妆', '出油'] },
+    { t: '养肤成分', m: ['养肤', '成分', '抗老', '护肤'] },
+  ]},
+];
+const kwSelected = {};   // group.key -> Set(option text)
+
+function renderKW() {
+  $('kwGroups').innerHTML = KW_GROUPS.map(g => {
+    kwSelected[g.key] = kwSelected[g.key] || new Set();
+    return `<div class="kw-row"><span class="kw-label">${g.label}</span>` +
+      g.options.map(o =>
+        `<span class="kw-chip${kwSelected[g.key].has(o.t) ? ' sel' : ''}" data-g="${g.key}" data-t="${o.t}">${o.t}</span>`
+      ).join('') + '</div>';
+  }).join('');
+}
+renderKW();
+
+$('kwGroups').addEventListener('click', e => {
+  const chip = e.target.closest('.kw-chip');
+  if (!chip) return;
+  const g = KW_GROUPS.find(x => x.key === chip.dataset.g);
+  const t = chip.dataset.t;
+  if (g.multi) {  // toggle
+    kwSelected[g.key].has(t) ? kwSelected[g.key].delete(t) : kwSelected[g.key].add(t);
+  } else {        // single choice
+    kwSelected[g.key].clear();
+    kwSelected[g.key].add(t);
+    if (g.sync) $('occasion').value = t;   // keep occasion dropdown in sync
+  }
+  renderKW();
+});
+
+function applyVoiceToKeywords(text) {
+  if (!text) return;
+  for (const g of KW_GROUPS) {
+    for (const o of g.options) {
+      if (o.m.some(k => text.includes(k))) { kwSelected[g.key].clear(); kwSelected[g.key].add(o.t); }
+    }
+  }
+  // budget: first number followed by 元 / 块 / 百 mapped to nearest tier
+  const num = (text.match(/(\d{2,5})\s*(元|块|百)/) || [])[1];
+  if (num) {
+    const v = /百$/.test((text.match(/(\d{2,5})\s*(元|块|百)/) || ['','','百'])[2]) ? parseInt(num) * 100 : parseInt(num);
+    kwSelected['budget'].clear();
+    kwSelected['budget'].add(v <= 200 ? '200元内' : v <= 500 ? '500元内' : '1000元内');
+  }
+  renderKW();
+  const box = $('kwBox');
+  box.classList.add('flash');
+  setTimeout(() => box.classList.remove('flash'), 1500);
+}
+
+function buildKWText() {
+  const parts = [];
+  for (const g of KW_GROUPS) {
+    const sel = [...(kwSelected[g.key] || [])];
+    if (sel.length) parts.push(`${g.label}：${sel.join('、')}`);
+  }
+  return parts.join('；');
+}
+
+/* ---------------- voice input (MediaRecorder + server-side ASR) ----------------
+   Web Speech API relies on Google speech servers, unreachable in mainland
+   networks. So we record in the browser and transcribe on the server via
+   qwen3-asr-flash. Two entry points share ONE recording session:
+   the upload card and the live-camera card. */
+let mediaRec = null, recChunks = [], recStream = null, recTimer = null, recStartTs = 0;
+let activeVoice = null;  // 'main' | 'cam' — which button started recording
+const VOICE_UI = {
+  main: { btn: $('voiceBtn'), hint: $('voiceHint'), text: null },
+  cam:  { btn: $('camVoiceBtn'), hint: $('camVoiceHint'), text: $('camVoiceText') },
+};
+const VOICE_HINT_IDLE = {
+  main: '说出场合 / 预算 / 偏好，例如："下周参加婚礼，预算300，想要显气色不卡纹"',
+  cam:  '边照镜子边说：场合 / 预算 / 偏好，生成方案时会一并使用',
+};
+
+function setVoiceUI(state) {  // 'idle' | 'recording' | 'transcribing'
+  for (const key of ['main', 'cam']) {
+    const u = VOICE_UI[key];
+    const active = key === activeVoice && state !== 'idle';
+    u.btn.classList.toggle('off', active);
+    u.btn.textContent =
+      state === 'recording' && active ? '⏹ 停止录音' :
+      state === 'transcribing' && active ? '⏳ 识别中 …' : '🎤 说出你的需求';
+    u.hint.textContent = state === 'recording' && active
+      ? '正在聆听，请说出你的需求（再次点击停止）…'
+      : state === 'transcribing' && active ? '正在识别语音，请稍候 …'
+      : VOICE_HINT_IDLE[key];
+  }
+}
+
+function toggleVoice(which) {
+  hideErr();
+  if (camMicBlocked()) { showErr(CAM_BLOCK_MSG); return; }
+  if (mediaRec && mediaRec.state === 'recording') { mediaRec.stop(); return; }
+  if (mediaRec && mediaRec.state === 'inactive' && recStream) cleanupRec();
+  activeVoice = which;
+  try {
+    recStream = null;
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+      recStream = stream;
+      recChunks = [];
+      mediaRec = new MediaRecorder(stream);
+      mediaRec.ondataavailable = e => { if (e.data.size) recChunks.push(e.data); };
+      mediaRec.onstop = onRecordStop;
+      mediaRec.start();
+      recStartTs = Date.now();
+      recTimer = setInterval(() => {
+        const s = Math.floor((Date.now() - recStartTs) / 1000);
+        VOICE_UI[activeVoice].hint.textContent = `正在聆听，请说出你的需求（${s}s，再次点击停止）…`;
+      }, 500);
+      setVoiceUI('recording');
+    }).catch(e => {
+      cleanupRec(); activeVoice = null;
+      showErr('无法打开麦克风：' + (e.name === 'NotAllowedError'
+        ? '请在浏览器地址栏允许麦克风权限后重试' : e.message));
+    });
+  } catch (e) {
+    cleanupRec(); activeVoice = null;
+    showErr('无法打开麦克风：' + (e.name === 'NotAllowedError'
+      ? '请在浏览器地址栏允许麦克风权限后重试' : e.message));
+  }
+}
+
+$('voiceBtn').onclick = () => toggleVoice('main');
+$('camVoiceBtn').onclick = () => toggleVoice('cam');
+
+function cleanupRec() {
+  if (recTimer) { clearInterval(recTimer); recTimer = null; }
+  if (recStream) { recStream.getTracks().forEach(t => t.stop()); recStream = null; }
+}
+
+async function onRecordStop() {
+  cleanupRec();
+  const which = activeVoice || 'main';
+  const mime = mediaRec && mediaRec.mimeType ? mediaRec.mimeType : 'audio/webm';
+  const blob = new Blob(recChunks, { type: mime });
+  setVoiceUI('transcribing');
+  try {
+    if (blob.size < 1000) throw new Error('录音太短，请按住说完再松开');
+    const fd = new FormData();
+    fd.append('file', blob, 'voice.webm');
+    const r = await fetchTimeout('/voice/transcribe', { method: 'POST', body: fd }, 90000);
+    if (!r.ok) {
+      let d = ''; try { d = (await r.json()).detail; } catch (_) {}
+      throw new Error(d || ('服务返回 ' + r.status));
+    }
+    const d = await r.json();
+    if (!d.text) throw new Error('没有识别到内容，请靠近麦克风重试');
+    // transcript always lands in the step-2 textarea (the submitted field)
+    $('voiceText').value = ($('voiceText').value ? $('voiceText').value + ' ' : '') + d.text;
+    // auto-light matching keyword chips so the user can confirm / correct
+    applyVoiceToKeywords(d.text);
+    if (VOICE_UI[which].text) {  // mirror on the camera card
+      VOICE_UI[which].text.style.display = 'block';
+      VOICE_UI[which].text.innerHTML = '<b>已记录需求：</b>' + d.text +
+        '（可在下方第 2 步编辑）';
+    }
+    // make sure step 2 is visible after voice input
+    if (analyzeResult && $('card2').style.display === 'none') {
+      applyAnalyze(analyzeResult, false);
+    } else if (!analyzeResult) {
+      VOICE_UI[which].hint.textContent = '需求已记录。请先完成人像检测，再生成方案';
+    }
+  } catch (e) { showErr('语音识别失败：' + friendlyError(e)); }
+  setVoiceUI('idle');
+  activeVoice = null;
+}
+
+/* ---------------- plan generation ---------------- */
+$('go').onclick = async () => {
+  if (!analyzeResult) { showErr('请先完成第 1 步获取人像'); return; }
+  hideErr(); $('go').disabled = true; $('loading2').style.display = 'block';
+  if (mediaRec && mediaRec.state === 'recording') { try { mediaRec.stop(); } catch (_) {} }
+  const sp = analyzeResult.suggested_profile;
+  const voiceReq = $('voiceText').value.trim();
+  const kwReq = buildKWText();
+  const body = {
+    skin_type: $('skin_type').value,
+    skin_tone: sp.skin_tone,
+    undertone: sp.undertone,
+    concerns: sp.concerns.length ? sp.concerns : ['日常保养'],
+    occasion: $('occasion').value,
+    user_request: [voiceReq, kwReq].filter(x => x).join('；') || null,
+  };
+  try {
+    const r = await fetchTimeout('/skin-profile/plan', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    }, 150000);
+    if (!r.ok) {
+      let d = ''; try { d = (await r.json()).detail; } catch (_) {}
+      throw new Error(d || ('服务返回 ' + r.status));
+    }
+    renderPlan(await r.json());
+    $('card3').style.display = 'block';
+    $('card3').scrollIntoView({ behavior: 'smooth' });
+  } catch (e) { showErr('方案生成失败：' + friendlyError(e)); }
+  $('go').disabled = false; $('loading2').style.display = 'none';
+};
+
+function renderPlan(plan) {
+  $('positioning').textContent = plan.positioning;
+  $('native').innerHTML = '<b>原生感说明：</b>' + plan.native_note;
+  $('products').innerHTML = plan.products.map(p => {
+    const price = priceMap[p.name] != null ? `<span class="price">¥${priceMap[p.name]}</span>` : '';
+    const shade = p.shade ? `<span class="badge">${p.shade}</span>` : '';
+    const cat = p.category ? `<span class="badge cat">${p.category}</span>` : '';
+    const hint = p.usage_hint ? `<div class="hint">💡 ${p.usage_hint}</div>` : '';
+    return `<div class="prod"><h4>${cat}${shade}${p.name} ${price}</h4>
+            <div class="why">${p.reason}</div>${hint}</div>`;
+  }).join('');
+  $('steps').innerHTML = plan.steps.map(s => `<li>${s}</li>`).join('');
+}
+
+/* price lookup for product cards */
+fetchTimeout('/products', {}, 10000).then(r => r.json())
+  .then(d => d.products.forEach(p => { priceMap[p.name] = p.price; }))
+  .catch(() => {});
+</script>
+</body>
+</html>

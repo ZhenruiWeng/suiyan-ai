@@ -1,0 +1,15 @@
+langchain>=0.3
+langchain-community>=0.3
+langchain-chroma>=0.1
+langchain-text-splitters>=0.3
+dashscope>=1.20
+chromadb>=0.5
+fastapi>=0.115
+uvicorn[standard]>=0.30
+pydantic>=2.7
+python-multipart>=0.0.9
+opencv-python>=4.10,<5
+numpy>=1.26
+pypdf>=4.0
+requests>=2.31
+sqlalchemy>=2.0

@@ -1,0 +1,20 @@
+# runtime generated artifacts
+chroma.db/
+suiyan_chroma.db/
+md5.text
+chat_history/
+*.log
+
+# python
+__pycache__/
+*.pyc
+.venv/
+
+# IDE
+.idea/
+
+# exported snapshots not part of the source
+exportToHTML/
+
+# local test media
+static/test_voice.wav
