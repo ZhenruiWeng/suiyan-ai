@@ -101,7 +101,10 @@ def _winkle_density(gray_roi: np.ndarray, mask: np.ndarray) -> float:
     g = gray_roi.astype(np.float32)
     lap = cv2.Laplacian(g, cv2.CV_32F, ksize=3)
     energy = float(np.mean(np.abs(lap[mask.astype(bool)])))
-    return float(min(1.0, energy / 12.0))  # 12.0 = empirical upper bound
+    # 35.0 = empirical upper bound for real portraits (pores/lashes/texture
+    # push mean |Laplacian| well past 12; 12 saturated the ratio at 1.0
+    # and made the smoothness score collapse to a constant zero).
+    return float(min(1.0, energy / 35.0))
 
 
 def _ita_to_tone(ita: float, undertone: str) -> str:
@@ -125,6 +128,42 @@ def _undertone_of(a_star: float, b_star: float) -> str:
     return "中性调"
 
 
+def _skin_scores(stats: Dict, ita: float, wrinkle: float,
+                 undertone_ratio: float, concerns: list) -> Dict:
+    """Map raw quantified metrics to 0-10 dashboard dimensions.
+
+    Every dimension is a transparent function of measured values, so the
+    radar chart stays explainable (no black-box scoring)."""
+    def c01(x: float) -> float:
+        return max(0.0, min(1.0, x))
+
+    def band(x: float, lo: float, hi: float, best_lo: float, best_hi: float) -> float:
+        """Inverted-U score: 1.0 inside the ideal band, linear falloff outside."""
+        if best_lo <= x <= best_hi:
+            return 1.0
+        if x < best_lo:
+            return c01(1 - (best_lo - x) / max(best_lo - lo, 1e-3))
+        return c01(1 - (x - best_hi) / max(hi - best_hi, 1e-3))
+
+    luma = band(stats["l_mean"], 20, 95, 58, 80)
+    glow = (band(stats["a_star"], 0, 32, 7, 18) * 0.6
+            + band(stats["b_star"], 2, 38, 12, 26) * 0.4)
+    even = c01(1 - stats["l_std"] / 18)
+    smooth = c01(1 - wrinkle / 0.75)
+    youth = c01(smooth * 0.65 + (1 - min(len(concerns), 4) / 4) * 0.35)
+    bal = band(ita, -25, 72, 15, 45) * 0.7 + band(undertone_ratio, 0.2, 4.5, 1.0, 2.2) * 0.3
+    scores = {
+        "光泽度": round(luma * 10, 1),
+        "气色度": round(glow * 10, 1),
+        "匀净度": round(even * 10, 1),
+        "细腻度": round(smooth * 10, 1),
+        "年轻度": round(youth * 10, 1),
+        "肤色平衡": round(bal * 10, 1),
+    }
+    scores["综合"] = round(sum(scores.values()) / 6, 1)
+    return scores
+
+
 def analyze_portrait_cv(bgr: np.ndarray) -> Dict:
     """Full quantitative analysis of one portrait (BGR ndarray)."""
     x, y, w, h = _detect_face_roi(bgr)
@@ -135,12 +174,13 @@ def analyze_portrait_cv(bgr: np.ndarray) -> Dict:
     ita = math.degrees(math.atan((stats["l_star"] - 50.0) / max(stats["b_star"], 1e-3)))
     undertone = _undertone_of(stats["a_star"], stats["b_star"])
     skin_tone = _ita_to_tone(ita, undertone)
+    undertone_ratio = stats["b_star"] / (abs(stats["a_star"]) + 0.5)
 
     gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
     wrinkle = _winkle_density(gray, mask)
 
     concerns = []
-    if wrinkle > 0.35:
+    if wrinkle > 0.40:
         concerns.append("眼周细纹")
     if stats["l_std"] > 12:
         concerns.append("暗沉")
@@ -154,13 +194,14 @@ def analyze_portrait_cv(bgr: np.ndarray) -> Dict:
             "a_star": round(stats["a_star"], 1),
             "b_star": round(stats["b_star"], 1),
             "l_std": round(stats["l_std"], 1),
-            "undertone_ratio": round(stats["b_star"] / (abs(stats["a_star"]) + 0.5), 2),
+            "undertone_ratio": round(undertone_ratio, 2),
             "wrinkle_density": round(wrinkle, 3),
             "skin_px": stats["valid_px"],
             "low_light": bool(stats["l_mean"] < 55),
             "face_box": [int(x), int(y), int(w), int(h)],
             "face_detected": True,
         },
+        "scores": _skin_scores(stats, ita, wrinkle, undertone_ratio, concerns),
         "suggested_profile": {
             "skin_tone": skin_tone,
             "undertone": undertone,

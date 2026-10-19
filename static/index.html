@@ -147,6 +147,7 @@
   <!-- STEP 2 metrics -->
   <div class="card" id="card2" style="display:none">
     <span class="step-tag">第 2 步 · 量化肤质画像</span>
+    <div id="dash"></div>
     <div class="metrics" id="metrics"></div>
     <div class="form-row">
       <label>肤质类型（单张照片无法量化油干，请自选）
@@ -280,9 +281,84 @@ async function handleFile(f) {
 
 function applyAnalyze(res, scroll = true) {
   analyzeResult = res;
+  renderDashboard(res);
   renderMetrics(res);
   $('card2').style.display = 'block';
   if (scroll) $('card2').scrollIntoView({ behavior: 'smooth' });
+}
+
+/* ---------------- dashboard: overall ring + radar chart ----------------
+   Same data as the metric cards, presented as a skin-report dashboard.
+   All dimensions are transparent mappings of measured values (see
+   _skin_scores in suiyan_vision_utils.py). */
+function renderDashboard(res) {
+  const s = res.scores;
+  if (!s) { $('dash').style.display = 'none'; return; }
+  const labels = Object.keys(s).filter(k => k !== '综合');
+
+  // overall ring gauge
+  const R = 42, C = 2 * Math.PI * R;
+  const pct = Math.min(s['综合'], 10) / 10;
+  const ring = `
+    <svg width="110" height="110" viewBox="0 0 110 110">
+      <circle cx="55" cy="55" r="${R}" fill="none" stroke="var(--border)" stroke-width="9"/>
+      <circle cx="55" cy="55" r="${R}" fill="none" stroke="var(--brand)" stroke-width="9"
+        stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - pct)}"
+        transform="rotate(-90 55 55)"/>
+      <text x="55" y="52" text-anchor="middle" font-size="26" font-weight="700" fill="var(--brand)">${s['综合']}</text>
+      <text x="55" y="72" text-anchor="middle" font-size="11" fill="var(--muted)">综合分</text>
+    </svg>`;
+
+  // radar chart (pure SVG, 6 axes, 0-10 scale)
+  const cx = 165, cy = 138, RAD = 92;
+  const pt = (i, v) => {
+    const a = -Math.PI / 2 + i * Math.PI / 3, rr = RAD * Math.min(v, 10) / 10;
+    return [(cx + rr * Math.cos(a)).toFixed(1), (cy + rr * Math.sin(a)).toFixed(1)];
+  };
+  const poly = pts => pts.map(p => p.join(',')).join(' ');
+  let grid = '';
+  [2, 4, 6, 8, 10].forEach(lvl => {
+    grid += `<polygon points="${poly(labels.map((_, i) => pt(i, lvl)))}"
+      fill="none" stroke="var(--border)" stroke-width="1" stroke-dasharray="${lvl === 10 ? '0' : '3 3'}"/>`;
+  });
+  let axes = labels.map((_, i) => {
+    const [ex, ey] = pt(i, 10);
+    return `<line x1="${cx}" y1="${cy}" x2="${ex}" y2="${ey}" stroke="var(--border)" stroke-width="1"/>`;
+  }).join('');
+  let texts = labels.map((k, i) => {
+    const a = -Math.PI / 2 + i * Math.PI / 3;
+    const lx = cx + (RAD + 26) * Math.cos(a), ly = cy + (RAD + 26) * Math.sin(a);
+    return `<text x="${lx.toFixed(1)}" y="${(ly - 4).toFixed(1)}" text-anchor="middle"
+      font-size="13" fill="var(--text)">${k}</text>
+      <text x="${lx.toFixed(1)}" y="${(ly + 13).toFixed(1)}" text-anchor="middle"
+      font-size="14" font-weight="700" fill="var(--brand)">${s[k]}</text>`;
+  }).join('');
+  const data = poly(labels.map((k, i) => pt(i, s[k])));
+  const radar = `
+    <svg width="330" height="286" viewBox="0 0 330 286" style="max-width:100%">
+      <defs><linearGradient id="radarFill" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="var(--brand)" stop-opacity=".38"/>
+        <stop offset="1" stop-color="var(--brand)" stop-opacity=".12"/>
+      </linearGradient></defs>
+      ${grid}${axes}
+      <polygon points="${data}" fill="url(#radarFill)" stroke="var(--brand)" stroke-width="2" stroke-linejoin="round"/>
+      ${texts}
+    </svg>`;
+
+  $('dash').style.display = 'block';
+  $('dash').innerHTML = `
+    <div style="display:flex;align-items:center;gap:6px;margin-top:16px">
+      <span class="step-tag" style="background:var(--brand)">📊 肤质报告</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:10px">
+      ${ring}
+      <div style="flex:1;min-width:220px;font-size:13px;color:var(--muted)">
+        基于量化画像实时生成，六维均可溯源至 ITA°/底调/纹理等实测值。<br>
+        <b style="color:var(--text)">优势：</b>${labels.slice().sort((a,b)=>s[b]-s[a]).slice(0,2).join('、')}
+        <b style="color:var(--text)">　待改善：</b>${labels.slice().sort((a,b)=>s[a]-s[b]).slice(0,2).join('、')}
+      </div>
+    </div>
+    <div style="text-align:center">${radar}</div>`;
 }
 
 function renderMetrics(res) {
@@ -386,7 +462,8 @@ $('liveToggle').onclick = () => {
         step2Shown = true;
         $('liveStrip').innerHTML += '<span class="live-chip" style="background:#e9f7ef;color:#20693c"><b>✓ 第 2 步已就绪</b>（下方），结果持续更新中</span>';
       } else {
-        renderMetrics(res);             // keep step-2 metrics fresh
+        renderDashboard(res);           // keep report + metrics fresh
+        renderMetrics(res);
       }
     } catch (e) { /* silent during live loop */ }
     liveBusy = false;
